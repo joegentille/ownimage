@@ -1,0 +1,14 @@
+{
+  "include": [
+    {
+      "source_image": "mongo:8.2.6-rc0",
+      "repository_name": "mongo",
+      "tag": "v1"
+    },
+    {
+      "source_image": "mysql:lts-oraclelinux9",
+      "repository_name": "mysql",
+      "tag": "v2"
+    }
+  ]
+}
