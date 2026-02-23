@@ -3,5 +3,10 @@
     "source_image": "python:3.11-slim",
     "repository_name": "python",
     "tag": "3.11-slim"
+  },
+  {
+    "source_image": "eclipse/che-dev:rc",
+    "repository_name": "eclipse/che-dev",
+    "tag": "v1"
   }
 ]
