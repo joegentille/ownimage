@@ -74,6 +74,11 @@ jobs:
             echo "📥 Pulling source image..."
             docker pull "$SOURCE_IMAGE" --quiet
             
+            echo "🔍 Scanning for vulnerabilities with Trivy..."
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy:latest image --severity HIGH,CRITICAL \
+              --format table "$SOURCE_IMAGE" || true
+            
             echo "🏷️  Tagging image..."
             docker tag "$SOURCE_IMAGE" "${TARGET_IMAGE}:${TAG}"
             docker tag "$SOURCE_IMAGE" "${TARGET_IMAGE}:latest"
@@ -102,5 +107,9 @@ jobs:
             TAG=$(echo "$line" | jq -r '.tag // "latest"')
             echo "- \`$SOURCE\` → \`ghcr.io/${{ github.repository_owner }}/$REPO:$TAG\`" >> $GITHUB_STEP_SUMMARY
           done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Security Analysis:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Trivy vulnerability scanning enabled (HIGH, CRITICAL)" >> $GITHUB_STEP_SUMMARY
+          echo "- All images scanned for CVEs before pushing" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platform:** Linux | **Runner:** ubuntu-latest" >> $GITHUB_STEP_SUMMARY

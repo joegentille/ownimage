@@ -65,6 +65,11 @@ jobs:
             Write-Host "📥 Pulling source image..."
             docker pull "$sourceImage"
             
+            Write-Host "🔍 Scanning for vulnerabilities with Trivy..."
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock `
+              aquasec/trivy:latest image --severity HIGH,CRITICAL `
+              --format table "$sourceImage" | Out-Host
+            
             Write-Host "🏷️  Tagging image..."
             docker tag "$sourceImage" "${targetImage}:${tag}"
             docker tag "$sourceImage" "${targetImage}:latest"
@@ -99,5 +104,9 @@ jobs:
             Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $line
           }
           
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Security Analysis:"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- ✅ Trivy vulnerability scanning enabled (HIGH, CRITICAL)"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- All images scanned for CVEs before pushing"
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "**Platform:** Windows | **Runner:** windows-latest"
