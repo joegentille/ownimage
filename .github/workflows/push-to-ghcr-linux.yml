@@ -59,6 +59,8 @@ jobs:
       - name: Process images
         run: |
           CONFIG_FILE="${{ github.event.inputs.config_file || 'images-config.linux.json' }}"
+          TRIVY_REPORT="/tmp/trivy-report.txt"
+          : > "$TRIVY_REPORT"
           
           jq -c '.[]' "$CONFIG_FILE" | while read -r line; do
             SOURCE_IMAGE=$(echo "$line" | jq -r '.source_image')
@@ -75,9 +77,11 @@ jobs:
             docker pull "$SOURCE_IMAGE" --quiet
             
             echo "🔍 Scanning for vulnerabilities with Trivy..."
+            echo "### $SOURCE_IMAGE" >> "$TRIVY_REPORT"
             docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
               aquasec/trivy:latest image --severity HIGH,CRITICAL \
-              --format table "$SOURCE_IMAGE" || true
+              --format table "$SOURCE_IMAGE" >> "$TRIVY_REPORT" 2>&1 || true
+            echo "" >> "$TRIVY_REPORT"
             
             echo "🏷️  Tagging image..."
             docker tag "$SOURCE_IMAGE" "${TARGET_IMAGE}:${TAG}"
@@ -92,14 +96,19 @@ jobs:
             
             echo "✅ Done: $SOURCE_IMAGE → ${TARGET_IMAGE}:${TAG}"
           done
+          
+          # Guardar documento de reporte para el summary
+          cp "$TRIVY_REPORT" /tmp/trivy-summary.txt
 
       - name: Create job summary
         if: success()
         run: |
           CONFIG_FILE="${{ github.event.inputs.config_file || 'images-config.linux.json' }}"
+          TRIVY_REPORT="/tmp/trivy-summary.txt"
+          
           echo "# ✅ Linux Images Pushed Successfully" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Images Processed:" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Images Processed:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           jq -c '.[]' "$CONFIG_FILE" | while read -r line; do
             SOURCE=$(echo "$line" | jq -r '.source_image')
@@ -107,9 +116,18 @@ jobs:
             TAG=$(echo "$line" | jq -r '.tag // "latest"')
             echo "- \`$SOURCE\` → \`ghcr.io/${{ github.repository_owner }}/$REPO:$TAG\`" >> $GITHUB_STEP_SUMMARY
           done
+          
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Security Analysis:" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Trivy vulnerability scanning enabled (HIGH, CRITICAL)" >> $GITHUB_STEP_SUMMARY
-          echo "- All images scanned for CVEs before pushing" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Security Scan Report (Trivy):" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "$TRIVY_REPORT" ]; then
+            cat "$TRIVY_REPORT" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No vulnerabilities found or scan not executed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platform:** Linux | **Runner:** ubuntu-latest" >> $GITHUB_STEP_SUMMARY
