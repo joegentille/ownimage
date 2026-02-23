@@ -1,0 +1,12 @@
+[
+  {
+    "source_image": "mcr.microsoft.com/windows/servercore:ltsc2022",
+    "repository_name": "windowsservercore",
+    "tag": "ltsc2022"
+  },
+  {
+    "source_image": "mcr.microsoft.com/windows/nanoserver:ltsc2022",
+    "repository_name": "windowsnanoserver",
+    "tag": "ltsc2022"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "source_image": "mongo:8.2.6-rc0",
+    "repository_name": "mongo",
+    "tag": "v3"
+  },
+  {
+    "source_image": "rabbitmq:4.2.4-alpine",
+    "repository_name": "rabbitmq",
+    "tag": "alpine-v2"
+  }
+]
